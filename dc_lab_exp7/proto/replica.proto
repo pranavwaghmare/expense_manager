@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package eventual_demo;
+
+service ReplicaService {
+  rpc SaveValue (ValueUpdate) returns (SaveAck);
+  rpc SyncUpdate (ValueUpdate) returns (SaveAck);
+  rpc GetValue (ValueQuery) returns (ValueState);
+}
+
+message ValueUpdate {
+  string key = 1;
+  string content = 2;
+  int32 lamport_timestamp = 3;
+  string origin_replica = 4;
+}
+
+message SaveAck {
+  bool accepted = 1;
+  string replica = 2;
+  int32 lamport_timestamp = 3;
+}
+
+message ValueQuery {
+  string key = 1;
+}
+
+message ValueState {
+  string key = 1;
+  string content = 2;
+  int32 lamport_timestamp = 3;
+  string origin_replica = 4;
+}

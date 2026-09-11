@@ -107,6 +107,41 @@ Follow these steps to set up the project locally.
     python -m unittest -v test_load_balancer.py
     ```
 
+    ## Redis Cache Gateway (Experiment 8)
+
+    The cache gateway wraps the existing `grpc_server.py` without changing the
+    backend. It caches `GetStatus` responses for 10 seconds and keeps a separate,
+    never-expiring stale copy for backend outages.
+
+    Install and start Redis, then install the Python client:
+
+    ```powershell
+    # Windows: install Redis using your preferred local Redis distribution
+    .\venv\Scripts\python.exe -m pip install -r requirements.txt
+    ```
+
+    In one terminal, start the existing backend:
+
+    ```powershell
+    .\venv\Scripts\python.exe grpc_server.py
+    ```
+
+    In another terminal, exercise the gateway:
+
+    ```powershell
+    .\venv\Scripts\python.exe cache_gateway.py ExpenseManagerClient
+    .\venv\Scripts\python.exe cache_gateway.py ExpenseManagerClient
+    ```
+
+    The first call should report `source=backend`; the second should report
+    `source=cache-hit`. Stopping Redis makes the gateway call the backend directly.
+    Stopping the backend while Redis is running makes it serve `source=stale-fallback`
+    from the backup key. Run the focused tests with:
+
+    ```powershell
+    .\venv\Scripts\python.exe -m unittest -v test_cache_gateway.py
+    ```
+
 ## 📂 Project Structure
 
 ```text

@@ -1,3 +1,4 @@
 grpcio
 grpcio-tools
 protobuf
+redis==5.0.1

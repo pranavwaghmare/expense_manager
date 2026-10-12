@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: worker
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: worker
+  template:
+    metadata:
+      labels:
+        app: worker
+    spec:
+      containers:
+        - name: worker
+          image: expense-manager-backend:latest
+          imagePullPolicy: Never
+          command: ["python", "worker_server.py", "60201"]
+          ports:
+            - containerPort: 60201
+          env:
+            - name: RUN_ENV
+              value: docker
+            - name: PYTHONUNBUFFERED
+              value: "1"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: worker
+spec:
+  clusterIP: None
+  selector:
+    app: worker
+  ports:
+    - name: grpc
+      port: 60201
+      targetPort: 60201

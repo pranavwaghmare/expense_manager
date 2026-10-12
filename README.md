@@ -142,6 +142,83 @@ Follow these steps to set up the project locally.
     .\venv\Scripts\python.exe -m unittest -v test_cache_gateway.py
     ```
 
+## Kubernetes Deployment (Experiment 10)
+
+The worker gRPC experiment can run as a three-replica Kubernetes deployment. The
+worker binds to all interfaces, and the headless Service lets gRPC resolve every
+pod so the load client can use round-robin balancing.
+
+Build the shared image from the project root:
+
+```powershell
+docker build -t expense-manager-backend:latest .
+```
+
+After enabling Kubernetes in Docker Desktop, deploy and inspect the workers:
+
+```powershell
+kubectl apply -f k8s/app.yaml
+kubectl get pods -l app=worker
+kubectl logs deployment/worker
+```
+
+Run the in-cluster concurrent load test:
+
+```powershell
+kubectl delete job load-test --ignore-not-found
+kubectl apply -f k8s/load-test-job.yaml
+kubectl wait --for=condition=complete job/load-test --timeout=90s
+kubectl logs job/load-test
+```
+
+The worker logs should show requests handled by all three pods. To force a real
+failover-style removal, scale the deployment to zero and restore it afterward:
+
+```powershell
+kubectl scale deployment worker --replicas=0
+kubectl scale deployment worker --replicas=3
+```
+
+Clean up with `kubectl delete -f k8s/app.yaml` and `kubectl delete job load-test`.
+
+## Distributed File System (Experiment 11)
+
+This experiment demonstrates chunking, two-way replication, heartbeat-based
+failover, checksum verification, and repair using gRPC. Generate its stubs
+from the project root:
+
+```powershell
+.\.venv\Scripts\python.exe -m grpc_tools.protoc -I=proto --python_out=. --grpc_python_out=. proto/dfs.proto
+```
+
+Start the metadata service and three storage nodes in separate terminals:
+
+```powershell
+.\.venv\Scripts\python.exe dfs_metadata.py
+.\.venv\Scripts\python.exe dfs_storage.py 1
+.\.venv\Scripts\python.exe dfs_storage.py 2
+.\.venv\Scripts\python.exe dfs_storage.py 3
+```
+
+Use the client from another terminal:
+
+```powershell
+.\.venv\Scripts\python.exe dfs_client.py status
+.\.venv\Scripts\python.exe dfs_client.py put .\photo.bin
+.\.venv\Scripts\python.exe dfs_client.py get photo.bin .\photo-copy.bin
+.\.venv\Scripts\python.exe dfs_repair.py
+```
+
+The metadata server stores its catalog in `dfs_data\metadata.json`; storage
+nodes store chunks in `dfs_data\store-*`. Stop a storage node, wait at least
+six seconds, and download the file to exercise replica failover. Run
+`dfs_repair.py` afterward to restore the replication factor from a healthy
+copy. Focused tests run with:
+
+```powershell
+.\.venv\Scripts\python.exe -m unittest -v test_dfs.py
+```
+
 ## 📂 Project Structure
 
 ```text

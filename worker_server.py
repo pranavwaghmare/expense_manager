@@ -39,9 +39,9 @@ def serve(port: int) -> None:
     worker_pb2_grpc.add_WorkerServiceServicer_to_server(
         WorkerServicer(name), server
     )
-    server.add_insecure_port(f"localhost:{port}")
+    server.add_insecure_port(f"0.0.0.0:{port}")
     server.start()
-    print(f"{name} listening on localhost:{port}", flush=True)
+    print(f"{name} listening on 0.0.0.0:{port}", flush=True)
     try:
         server.wait_for_termination()
     except KeyboardInterrupt:
